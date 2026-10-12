@@ -236,25 +236,20 @@ input::placeholder{color:var(--muted);opacity:.72}
 <div class="actions">
 <button class="primary" id="payBtn" type="button">Pay securely <span aria-hidden="true">&rarr;</span></button>
 </div>
-<p class="secure">Checkout is handled by Stripe. Your card details never touch this page.</p>
+<p class="secure">Secure checkout &mdash; you will complete your payment on the next page.</p>
 </div>
 </section>
 
 <section class="screen" data-screen="done">
 <div class="sheet">
 <svg class="check" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43"/><path d="m29 51 14 14 29-32"/></svg>
-<p class="step">Build slot locked</p>
-<h2>You are in the build queue.</h2>
-<p class="lede">Finish the payment in the Stripe tab that just opened &mdash; your receipt there is the proof. Then here is what happens next:</p>
-<div id="careActivate" style="display:none;width:min(620px,100%)">
-<p class="error" id="careError"></p>
-<div class="actions"><button class="primary" id="careBtn" type="button">Activate care plan</button></div>
-<p class="tiny">Billed monthly by Stripe. Cancel anytime.</p>
-</div>
+<p class="step">You are in</p>
+<h2>Finish payment to lock your build.</h2>
+<p class="lede">Your secure checkout is open in the other tab &mdash; complete it there, then here is what happens next:</p>
 <div class="nextsteps">
 <div class="ns"><span class="n">1</span><span><b>Intake form lands in your inbox.</b> Logo, service area, pricing &mdash; everything needed to brand your site.</span></div>
 <div class="ns"><span class="n">2</span><span><b>Your build starts.</b> Most sites go live within <b id="buildTime">&mdash;</b> of the intake form coming back.</span></div>
-<div class="ns"><span class="n">3</span><span><b>Balance on delivery</b> (deposit orders). You approve the live site, then the remainder is due.</span></div>
+<div class="ns"><span class="n">3</span><span><b>Care plan (if you added it):</b> first month free, then billed monthly. Deposit balances are due when your site ships.</span></div>
 </div>
 <div class="ref" id="orderRef">BQ-0000</div>
 <p class="tiny">Questions? Reply to the intake email when it arrives.</p>
@@ -284,19 +279,18 @@ var CONFIG = {
       includes: ["Everything in Pro", "Review automation", "Google Business setup"]
     }
   },
-  /* Create six one-time Payment Links in the Stripe Dashboard (Products > Payment Links):
-     one full-price and one deposit link per package. Paste the URLs below. */
-  stripeLinks: {
-    starter: { full: "", deposit: "" },
-    pro:     { full: "", deposit: "" },
-    premium: { full: "", deposit: "" }
+  /* One-time payment links: full price + deposit per package. */
+  paymentLinks: {
+    starter: { full: "https://pay.jim.com/jim_human-petroleum-llc/Ri0x-YOEFj64Ayt-2499.00", deposit: "https://pay.jim.com/jim_human-petroleum-llc/Ri0x-zsiU6JY4Fa-1249.00" },
+    pro:     { full: "https://pay.jim.com/jim_human-petroleum-llc/Ri0x-N7kXCkynkF-3499.00", deposit: "https://pay.jim.com/jim_human-petroleum-llc/Ri0x-p8f1FrQNr1-1749.00" },
+    premium: { full: "https://pay.jim.com/jim_human-petroleum-llc/Ri0x-krcIxvv6RF-3999.00", deposit: "https://pay.jim.com/jim_human-petroleum-llc/Ri0x-0RM1qR6Uyk-1999.00" }
   },
-  /* Monthly care plan: hosting, updates, priority support. Create one RECURRING
-     Payment Link per tier in Stripe and paste the URLs below. */
+  /* Monthly care plan: hosting, updates, priority support. First month free,
+     then billed on the monthly maintenance invoice (sent separately). */
   carePlans: {
-    starter: { price: 70,  link: "" },
-    pro:     { price: 150, link: "" },
-    premium: { price: 200, link: "" }
+    starter: 70,
+    pro:     150,
+    premium: 200
   },
   careIncludes: ["Hosting + SSL", "Updates and fixes", "Priority support", "Cancel anytime"]
 };
@@ -351,15 +345,15 @@ function go(id, push){
 
 function pkg(){ return CONFIG.packages[state.pkg]; }
 function total(){ return pkg().price; }
-function dueToday(){
-  if(state.funding === "deposit") return Math.round(total() * CONFIG.depositPct);
-  return total();
-}
-function stripeUrl(){
+function paymentUrl(){
   if(!state.pkg || !state.funding) return "";
-  var links = CONFIG.stripeLinks[state.pkg];
+  var links = CONFIG.paymentLinks[state.pkg];
   if(!links) return "";
   return (links[state.funding] || "").trim();
+}
+function dueToday(){
+  if(state.funding === "deposit") return Math.floor(total() * CONFIG.depositPct);
+  return total();
 }
 
 function renderPackages(){
@@ -387,7 +381,7 @@ function renderPackages(){
 function updateDynamic(id){
   if(id === "funding" && state.pkg){
     var p = pkg();
-    var dep = Math.round(p.price * CONFIG.depositPct);
+    var dep = Math.floor(p.price * CONFIG.depositPct);
     text("fullTitle", "Pay in full");
     text("fullSub", money(p.price) + " today. Done \u2014 nothing owed later.");
     text("depTitle", Math.round(CONFIG.depositPct * 100) + "% deposit");
@@ -396,7 +390,7 @@ function updateDynamic(id){
   if(id === "careplan" && state.pkg){
     var cp = CONFIG.carePlans[state.pkg];
     text("careYesTitle", "Yes, add it");
-    text("careYesSub", money(cp.price) + "/mo \u2014 " + CONFIG.careIncludes.join(" \u00b7 ") + ".");
+    text("careYesSub", money(cp) + "/mo \u2014 first month free. " + CONFIG.careIncludes.join(" \u00b7 ") + ".");
   }
   if(id === "review" && state.pkg){
     text("sumPackage", pkg().name + " \u00b7 " + (state.funding === "deposit" ? "Deposit" : "Full payment"));
@@ -406,10 +400,9 @@ function updateDynamic(id){
     text("dueAmt", money(dueToday()));
     var cl = $("careLine");
     if(cl){
-      if(state.careplan){ cl.style.display = "flex"; text("careAmt", money(CONFIG.carePlans[state.pkg].price) + "/mo"); }
+      if(state.careplan){ cl.style.display = "flex"; text("careAmt", money(CONFIG.carePlans[state.pkg]) + "/mo"); }
       else cl.style.display = "none";
     }
-    text("payBtn", "");
     $("payBtn").innerHTML = "Pay " + money(dueToday()) + " securely <span aria-hidden=\"true\">\u2192</span>";
     errorFor("review", "");
   }
@@ -417,13 +410,6 @@ function updateDynamic(id){
     text("buildTime", CONFIG.buildTime);
     text("orderRef", state.orderRef || ("BQ-" + Math.floor(1000 + Math.random() * 9000)));
     state.orderRef = $("orderRef").textContent;
-    var ca = $("careActivate");
-    if(ca){
-      if(state.careplan){
-        ca.style.display = "block";
-        $("careBtn").innerHTML = "Activate care plan \u2014 " + money(CONFIG.carePlans[state.pkg].price) + "/mo <span aria-hidden=\"true\">\u2192</span>";
-      } else ca.style.display = "none";
-    }
   }
 }
 
@@ -450,7 +436,7 @@ app.addEventListener("click", function(e){
   var btn = e.target.closest("button");
   if(!btn) return;
   if(btn.id === "backBtn" || btn.id === "restartBtn" || btn.id === "enterBtn" ||
-     btn.id === "payBtn" || btn.id === "careBtn" || btn.id === "detailsBtn") return;
+     btn.id === "payBtn" || btn.id === "detailsBtn") return;
 
   if(btn.hasAttribute("data-package")){
     state.pkg = btn.getAttribute("data-package");
@@ -500,25 +486,13 @@ $("detailsBtn").addEventListener("click", function(){
 });
 
 $("payBtn").addEventListener("click", function(){
-  var url = stripeUrl();
+  var url = paymentUrl();
   if(!url || url.indexOf("http") !== 0){
-    errorFor("review", "Checkout is not connected yet \u2014 Basqi is wiring up the payment link.");
+    errorFor("review", "Checkout is not connected yet \u2014 please try again in a moment.");
     return;
   }
   window.open(url, "_blank", "noopener");
   go("done", true);
-});
-
-$("careBtn").addEventListener("click", function(){
-  var cp = CONFIG.carePlans[state.pkg] || {};
-  var link = (cp.link || "").trim();
-  var err = $("careError");
-  if(!link || link.indexOf("http") !== 0){
-    if(err) err.textContent = "The care plan link is not connected yet.";
-    return;
-  }
-  if(err) err.textContent = "";
-  window.open(link, "_blank", "noopener");
 });
 
 if(window.matchMedia("(pointer:fine)").matches && !window.matchMedia("(prefers-reduced-motion:reduce)").matches){
