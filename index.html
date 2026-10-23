@@ -169,6 +169,7 @@ input::placeholder{color:var(--muted);opacity:.72}
 <p class="step">Pick your build</p>
 <h2>Choose your package.</h2>
 <p class="lede">One build, one price. Your booking site goes live with your branding, ready to take jobs while you are on the road.</p>
+<p class="lede"><b>Our guarantee:</b> We fix it until you&rsquo;re happy &mdash; and you don&rsquo;t pay the final balance until you are.</p>
 <div class="choices" id="packageChoices" style="--cols:3"></div>
 </div>
 </section>
@@ -177,7 +178,7 @@ input::placeholder{color:var(--muted);opacity:.72}
 <div class="sheet">
 <p class="step">One decision</p>
 <h2>How do you want to fund it?</h2>
-<p class="lede" id="fundingLede">Lock your build slot today. The balance is only due when your site ships.</p>
+<p class="lede" id="fundingLede">Lock your build slot today. The balance is only due when your site ships, and only once you are happy with it.</p>
 <div class="choices" style="--cols:2">
 <button class="choice" data-funding="full" data-next="details"><strong id="fullTitle">Pay in full</strong><small id="fullSub"></small></button>
 <button class="choice" data-funding="deposit" data-next="details"><strong id="depTitle">Deposit</strong><small id="depSub"></small></button>
@@ -237,6 +238,7 @@ input::placeholder{color:var(--muted);opacity:.72}
 <button class="primary" id="payBtn" type="button">Pay securely <span aria-hidden="true">&rarr;</span></button>
 </div>
 <p class="secure">Secure checkout &mdash; you will complete your payment on the next page.</p>
+<p class="tiny">Our guarantee: we fix it until you are happy, and you do not pay the final balance until you are.</p>
 </div>
 </section>
 
@@ -245,11 +247,11 @@ input::placeholder{color:var(--muted);opacity:.72}
 <svg class="check" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43"/><path d="m29 51 14 14 29-32"/></svg>
 <p class="step">You are in</p>
 <h2>Finish payment to lock your build.</h2>
-<p class="lede">Your secure checkout is open in the other tab &mdash; complete it there, then here is what happens next:</p>
+<p class="lede">Your secure checkout just opened &mdash; complete it there, then here is what happens next:</p>
 <div class="nextsteps">
 <div class="ns"><span class="n">1</span><span><b>Intake form lands in your inbox.</b> Logo, service area, pricing &mdash; everything needed to brand your site.</span></div>
-<div class="ns"><span class="n">2</span><span><b>Your build starts.</b> Most sites go live within <b id="buildTime">&mdash;</b> of the intake form coming back.</span></div>
-<div class="ns"><span class="n">3</span><span><b>Care plan (if you added it):</b> first month free, then billed monthly. Deposit balances are due when your site ships.</span></div>
+<div class="ns"><span class="n">2</span><span><b>Your build starts.</b> Your site goes live within <b id="buildTime">&mdash;</b> of the intake form coming back.</span></div>
+<div class="ns"><span class="n">3</span><span><b>Care plan (if you added it):</b> first month free, then billed monthly. Deposit balances are due when your site ships, and only once you are happy with it. We fix it until you are.</span></div>
 </div>
 <div class="ref" id="orderRef">BQ-0000</div>
 <p class="tiny">Questions? Reply to the intake email when it arrives.</p>
@@ -264,18 +266,17 @@ input::placeholder{color:var(--muted);opacity:.72}
 /* CONFIG: everything Basqi edits lives here. */
 var CONFIG = {
   depositPct: 0.5,
-  buildTime: "7\u201310 days",
   packages: {
     starter: {
-      name: "Starter", price: 2499, tag: "Look professional",
+      name: "Starter", price: 2499, tag: "Look professional", timeline: "up to 7 days",
       includes: ["Booking page with your branding", "Service area + contact info", "Mobile-first design"]
     },
     pro: {
-      name: "Pro", price: 3499, tag: "Most movers pick this", badge: true,
+      name: "Pro", price: 3499, tag: "Most movers pick this", badge: true, timeline: "up to 14 days",
       includes: ["Everything in Starter", "Step-by-step quote-and-book flow", "Job dashboard for you", "Mover roster \u2014 crew claims jobs"]
     },
     premium: {
-      name: "Premium", price: 3999, tag: "Get found",
+      name: "Premium", price: 3999, tag: "Get found", timeline: "up to 30 days",
       includes: ["Everything in Pro", "Review automation", "Google Business setup"]
     }
   },
@@ -373,6 +374,7 @@ function renderPackages(){
     html += '<ul class="includes">';
     p.includes.forEach(function(item){ html += "<li>" + item + "</li>"; });
     html += "</ul>";
+    html += "<small>Live " + p.timeline + " from your intake coming back.</small>";
     b.innerHTML = html;
     host.appendChild(b);
   });
@@ -385,7 +387,7 @@ function updateDynamic(id){
     text("fullTitle", "Pay in full");
     text("fullSub", money(p.price) + " today. Done \u2014 nothing owed later.");
     text("depTitle", Math.round(CONFIG.depositPct * 100) + "% deposit");
-    text("depSub", money(dep) + " today to lock your build slot, " + money(p.price - dep) + " when your site ships.");
+    text("depSub", money(dep) + " today to lock your build slot, " + money(p.price - dep) + " when your site ships and you are happy with it.");
   }
   if(id === "careplan" && state.pkg){
     var cp = CONFIG.carePlans[state.pkg];
@@ -407,7 +409,7 @@ function updateDynamic(id){
     errorFor("review", "");
   }
   if(id === "done"){
-    text("buildTime", CONFIG.buildTime);
+    text("buildTime", state.pkg ? pkg().timeline : "");
     text("orderRef", state.orderRef || ("BQ-" + Math.floor(1000 + Math.random() * 9000)));
     state.orderRef = $("orderRef").textContent;
   }
@@ -491,7 +493,8 @@ $("payBtn").addEventListener("click", function(){
     errorFor("review", "Checkout is not connected yet \u2014 please try again in a moment.");
     return;
   }
-  window.open(url, "_blank", "noopener");
+  var win = window.open(url, "jim-checkout", "popup=yes,width=430,height=800,menubar=no,toolbar=no,status=no");
+  if(!win) window.open(url, "_blank", "noopener");
   go("done", true);
 });
 
