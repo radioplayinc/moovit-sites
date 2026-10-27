@@ -1,0 +1,23 @@
+# Moovit Sites — Booking websites for moving companies
+
+> A step-by-step booking site for your moving company. Pick a package, pay securely, and get live in days.
+
+## Facts
+
+- Seller: Basqi. The booking websites are sold as Moovit Sites.
+- Packages (one build, one price): Starter $2,499, Pro $3,499, Premium $3,999.
+- Funding: pay in full, or a 50% deposit (Starter $1,249, Pro $1,749, Premium $1,999). The balance is only due when the site ships, and only once the buyer is happy with it.
+- Timelines (from the intake form coming back): Starter up to 7 days, Pro up to 14 days, Premium up to 30 days.
+- Starter: booking page with your branding, service area and contact info, mobile-first design.
+- Pro: everything in Starter, plus the step-by-step quote-and-book flow, a job dashboard, and a mover roster where crew claim jobs.
+- Premium: everything in Pro, plus review automation and Google Business setup.
+- Care plan: hosting, updates and fixes, priority support. Starter $70, Pro $150, Premium $200 per month, first month free, then billed on the monthly maintenance invoice. Cancel anytime.
+- Guarantee: we fix it until you are happy, and you do not pay the final balance until you are.
+- After payment: an intake form lands in the buyer's inbox (logo, service area, pricing). The build starts when it comes back.
+- Payment: secure checkout opens on the next page.
+
+## Pages
+
+- [Booking websites for moving companies](https://moovit-sites.pages.dev/): pick a package, choose funding, add a care plan, and pay securely.
+- [Booking website questions and answers](https://moovit-sites.pages.dev/faq.html): cost, deposits, timelines, packages, care plan, guarantee, and what happens after payment.
+- [Live demo booking site](https://moovit-co.pages.dev/): the Moovit booking site buyers are ordering.
